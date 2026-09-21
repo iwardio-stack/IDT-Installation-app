@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IDT Installation Sign-Off</title>
+<style>
+:root{--green:#b7ff00;--orange:#ff7a00;--black:#101010}
+*{box-sizing:border-box}body{margin:0;background:#e9e9e9;font-family:Arial,sans-serif;color:#111}
+header{background:var(--black);color:white;padding:18px;text-align:center;border-bottom:5px solid var(--green)}
+header h1{margin:0;font-size:21px;color:var(--green)}header p{margin:5px 0 0;color:var(--orange);font-size:12px}
+main{max-width:760px;margin:auto;padding:12px}.card{background:white;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px #0001}
+h2{font-size:17px;margin:0 0 12px;border-bottom:2px solid var(--green);padding-bottom:6px}
+label{display:block;font-weight:bold;font-size:13px;margin-top:10px}input,textarea,select{width:100%;padding:11px;margin-top:5px;border:1px solid #bbb;border-radius:7px;font-size:15px}textarea{min-height:90px;resize:vertical}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.buttons{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}button{border:0;border-radius:8px;padding:12px 14px;font-weight:bold;background:var(--black);color:white}button.primary{background:var(--green);color:#111}button.orange{background:var(--orange)}button.danger{background:#b00020}
+canvas{width:100%;height:170px;border:2px dashed #888;border-radius:8px;touch-action:none;background:#fff}.siglabel{font-size:12px;color:#666;margin-top:4px}
+#photos{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.photo{width:100px;height:100px;object-fit:cover;border-radius:7px;border:1px solid #aaa}
+.accept{border:2px solid #111;padding:12px;border-radius:8px;background:#f8fff0}.accept strong{display:block;margin-bottom:5px}
+footer{text-align:center;font-size:11px;color:#666;padding:15px}
+@media(max-width:520px){.grid{grid-template-columns:1fr}}
+@media print{button,input[type=file]{display:none!important}body{background:white}.card{box-shadow:none;break-inside:avoid}header{print-color-adjust:exact}}
+</style>
+</head>
+<body>
+<header><h1>I.D.T. STEELWORKS AND ENGINEERING</h1><p>CLIENT INSTALLATION SIGN-OFF</p></header>
+<main>
+<div class="card">
+<h2>1. Project & Client Details</h2>
+<div class="grid">
+<div><label>Job / Reference No.</label><input id="job"></div>
+<div><label>Date</label><input id="date" type="date"></div>
+</div>
+<label>Client / Company Name</label><input id="client">
+<label>Installation Address</label><textarea id="address"></textarea>
+<div class="grid">
+<div><label>Client Contact</label><input id="contact"></div>
+<div><label>Installer Name</label><input id="installer"></div>
+</div>
+</div>
+
+<div class="card">
+<h2>2. Installation Details</h2>
+<label>Work / Items Installed</label><textarea id="work" placeholder="Describe the installation completed..."></textarea>
+<label>Outstanding Items / Defects</label><textarea id="defects"></textarea>
+<label>Installer Notes</label><textarea id="notes"></textarea>
+</div>
+
+<div class="card">
+<h2>3. Site Photos</h2>
+<label>Select photos from your phone</label>
+<input id="photoInput" type="file" accept="image/*" multiple>
+<div id="photos"></div>
+</div>
+
+<div class="card">
+<h2>4. Acceptance Block</h2>
+<div class="accept">
+<strong>Client Acceptance</strong>
+I confirm that the installation described above has been inspected. The work is accepted as recorded, subject to any outstanding items or notes listed on this form.
+<label><input id="accepted" type="checkbox" style="width:auto"> Client accepts completed installation</label>
+<label><input id="conditional" type="checkbox" style="width:auto"> Accepted subject to listed outstanding items</label>
+</div>
+</div>
+
+<div class="card">
+<h2>5. Signatures</h2>
+<label>Client Signature</label><canvas id="clientSig" width="700" height="220"></canvas><div class="siglabel">Sign using your finger</div>
+<div class="buttons"><button onclick="clearSig('clientSig')">Clear Client Signature</button></div>
+<label>Installer Signature</label><canvas id="installerSig" width="700" height="220"></canvas><div class="siglabel">Sign using your finger</div>
+<div class="buttons"><button onclick="clearSig('installerSig')">Clear Installer Signature</button></div>
+</div>
+
+<div class="buttons">
+<button class="primary" onclick="saveForm()">Save Form on Phone</button>
+<button onclick="loadForm()">Load Saved Form</button>
+<button class="orange" onclick="createPdfReport()">Create PDF Report</button>
+<button onclick="sharePdfReport()">Share PDF via WhatsApp / Email</button>
+<button class="danger" onclick="clearAll()">Clear Form</button>
+</div>
+</main>
+<footer>Offline form • Data stays on this device unless you share or print it.</footer>
+
+<script>
+const ids=['job','date','client','address','contact','installer','work','defects','notes','accepted','conditional'];
+document.getElementById('date').value=new Date().toISOString().slice(0,10);
+const photoInput=document.getElementById('photoInput'), photos=document.getElementById('photos');
+photoInput.addEventListener('change',()=>{[...photoInput.files].forEach(f=>{const r=new FileReader();r.onload=e=>{const img=document.createElement('img');img.src=e.target.result;img.className='photo';photos.appendChild(img)};r.readAsDataURL(f)})});
+
+function setupCanvas(id){const c=document.getElementById(id),ctx=c.getContext('2d');ctx.lineWidth=3;ctx.lineCap='round';let drawing=false;
+function pos(e){const r=c.getBoundingClientRect(),p=e.touches?e.touches[0]:e;return{x:(p.clientX-r.left)*c.width/r.width,y:(p.clientY-r.top)*c.height/r.height}}
+function start(e){drawing=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);e.preventDefault()}
+function move(e){if(!drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();e.preventDefault()}
+function end(){drawing=false}
+c.addEventListener('pointerdown',start);c.addEventListener('pointermove',move);c.addEventListener('pointerup',end);c.addEventListener('pointerleave',end);
+c.addEventListener('touchstart',start,{passive:false});c.addEventListener('touchmove',move,{passive:false});c.addEventListener('touchend',end);
+}
+setupCanvas('clientSig');setupCanvas('installerSig');
+function clearSig(id){document.getElementById(id).getContext('2d').clearRect(0,0,700,220)}
+function data(){let o={};ids.forEach(id=>o[id]=document.getElementById(id).type==='checkbox'?document.getElementById(id).checked:document.getElementById(id).value);o.clientSig=document.getElementById('clientSig').toDataURL();o.installerSig=document.getElementById('installerSig').toDataURL();o.photos=[...photos.querySelectorAll('img')].map(x=>x.src);return o}
+function apply(o){ids.forEach(id=>{if(o[id]!==undefined){let e=document.getElementById(id);if(e.type==='checkbox')e.checked=o[id];else e.value=o[id]}});['clientSig','installerSig'].forEach(id=>{if(o[id]){let im=new Image();im.onload=()=>document.getElementById(id).getContext('2d').drawImage(im,0,0);im.src=o[id]}});photos.innerHTML='';(o.photos||[]).forEach(src=>{let im=document.createElement('img');im.src=src;im.className='photo';photos.appendChild(im)})}
+function saveForm(){localStorage.setItem('idtSignoff',JSON.stringify(data()));alert('Form saved on this phone.')}
+function loadForm(){let x=localStorage.getItem('idtSignoff');if(x)apply(JSON.parse(x));else alert('No saved form found.')}
+function clearAll(){if(confirm('Clear all form information?')){localStorage.removeItem('idtSignoff');location.reload()}}
+function createPdfReport(){
+  saveForm();
+  window.print();
+}
+async function sharePdfReport(){
+  saveForm();
+  const text=`IDT Installation Sign-Off\nClient: ${document.getElementById('client').value}\nJob: ${document.getElementById('job').value}\nDate: ${document.getElementById('date').value}\n\nFirst tap Create PDF Report and choose Save as PDF. Then use Android Share to select WhatsApp or Email.`;
+  if(navigator.share){await navigator.share({title:'IDT PDF Report Sharing Instructions',text});}
+  else {navigator.clipboard.writeText(text);alert('Instructions copied. Create the PDF first, then share the saved PDF from your phone to WhatsApp or Email.');}
+}
+async function shareForm(){let text=`IDT Installation Sign-Off\nClient: ${document.getElementById('client').value}\nJob: ${document.getElementById('job').value}\nDate: ${document.getElementById('date').value}\nWork: ${document.getElementById('work').value}\nNotes: ${document.getElementById('notes').value}`;if(navigator.share){await navigator.share({title:'IDT Installation Sign-Off',text});}else{navigator.clipboard.writeText(text);alert('Form summary copied. Use Print / Save as PDF to share the completed document.');}}
+</script>
+</body></html>
